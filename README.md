@@ -1,3 +1,15 @@
+---
+title: {{openenv-email-triage-system}}
+emoji: {{♿}}
+colorFrom: {{yellow}}
+colorTo: {{green}}
+{{#pythonVersion}}
+python_version: "{{3.14.3}}"
+{{/pythonVersion}}
+app_file: server/app.py
+pinned: false
+---
+
 # Email Triage Environment (OpenEnv)
 
 ## Overview
