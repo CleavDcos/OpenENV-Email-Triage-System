@@ -1,10 +1,12 @@
+import uvicorn
 from openenv.core.env_server import create_fastapi_app
 
 from environment import EmailTriageEnvironment
 from models import EmailTriageAction, EmailTriageObservation
 
 app = create_fastapi_app(
-    EmailTriageEnvironment,
-    EmailTriageAction,
-    EmailTriageObservation
+    EmailTriageEnvironment, EmailTriageAction, EmailTriageObservation
 )
+
+if __name__ == "__main__":
+    uvicorn.run(app, host="0.0.0.0", port=7860)
