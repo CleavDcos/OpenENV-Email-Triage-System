@@ -1,0 +1,33 @@
+name: email-triage-env
+
+description: >
+  An OpenEnv environment that simulates real-world email triage tasks.
+  The agent must classify emails, extract intent, and generate replies.
+
+version: 0.1.0
+
+entrypoint:
+  module: server.app
+  object: app
+
+models:
+  action: models.EmailTriageAction
+  observation: models.EmailTriageObservation
+  state: models.EmailTriageState
+
+tasks:
+  - name: classification
+    description: Classify the email into spam, important, or support
+    difficulty: easy
+
+  - name: intent
+    description: Identify the user's intent from the email
+    difficulty: medium
+
+  - name: reply
+    description: Generate an appropriate reply to the email
+    difficulty: hard
+
+metadata:
+  author: your-name
+  license: MIT
