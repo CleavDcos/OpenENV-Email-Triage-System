@@ -1,65 +1,183 @@
+import asyncio
 import os
-import random
+import textwrap
+import re
+from typing import List
+from dotenv import load_dotenv
+from openai import OpenAI
+from environment import EmailTriageEnvironment, EmailTriageAction
 
-# --- Import your env + policy ---
-# Make sure these imports match your file structure later
-from environment import EmailTriageEnvironment
-from policies import RuleBasedEmailPolicy
+load_dotenv()
 
-def run_episode(env, policy):
-    obs = env.reset()
+# ===== ENV CONFIG =====
+API_BASE_URL = os.getenv("API_BASE_URL") or "https://router.huggingface.co/v1"
+MODEL_NAME = os.getenv("MODEL_NAME") or "Qwen/Qwen2.5-72B-Instruct"
+API_KEY = os.getenv("HF_TOKEN") or os.getenv("API_KEY")
 
-    print("[START]")
-    print(f"email: {obs.email_text}")
-    print(f"stage: {obs.current_stage}")
+TASK_NAME = "email-triage"
+BENCHMARK = "openenv-email-triage"
 
-    total_reward = 0
+MAX_STEPS = 8
+TEMPERATURE = 0.1   
+MAX_TOKENS = 100
+SUCCESS_THRESHOLD = 0.1
 
-    while not obs.done:
-        action = policy.select_action(obs)
+# ===== SYSTEM PROMPT =====
+SYSTEM_PROMPT = textwrap.dedent("""
+You are an Email Triage AI agent.
 
-        print("[STEP]")
-        print(f"stage: {obs.current_stage}")
-        print(f"action: {action.content}")
+Follow rules carefully.
+Return ONLY required format.
+Do not include explanations.
 
-        obs = env.step(action)
+Stages:
+classification → intent → reply
 
-        print(f"reward: {obs.reward}")
-        print(f"next_stage: {obs.current_stage}")
-        print(f"message: {obs.message}")
-
-        if obs.reward is not None:
-            total_reward += obs.reward
-
-    print("[END]")
-    print(f"final_score: {total_reward}")
-    print(f"steps: {env.state.step_count}")
-
-    return total_reward
+Output EXACTLY:
+action_type:<type>;content:<value>
+""").strip()
 
 
-def main():
-    # Required env variables (from checklist)
-    API_BASE_URL = os.getenv("API_BASE_URL")
-    MODEL_NAME = os.getenv("MODEL_NAME")
-    HF_TOKEN = os.getenv("HF_TOKEN")
+# ===== LOGGING =====
+def log_start(task, env, model):
+    print(f"[START] task={task} env={env} model={model}", flush=True)
+
+
+def log_step(step, action, reward, done, error):
+    error_val = error if error else "null"
+    print(
+        f"[STEP] step={step} action={action} reward={reward:.2f} done={str(done).lower()} error={error_val}",
+        flush=True,
+    )
+
+
+def log_end(success, steps, score, rewards):
+    rewards_str = ",".join(f"{r:.2f}" for r in rewards)
+    print(f"[END] success={str(success).lower()} steps={steps} score={score:.3f} rewards={rewards_str}", flush=True)
+
+
+# ===== PROMPT BUILDER =====
+def build_prompt(obs):
+    history_text = "\n".join(
+        [f"{h['stage']} -> {h['output']}" for h in obs.history]
+    ) if obs.history else "None"
+
+    return f"""
+Email: {obs.email_text}
+
+Current Stage: {obs.current_stage}
+
+IMPORTANT:
+- Only act for CURRENT STAGE
+- Do NOT repeat previous stages
+- Use keyword matching (simple logic)
+
+History:
+{history_text}
+
+Output EXACTLY:
+action_type:<type>;content:<value>
+"""
+
+
+
+def parse_action(text: str):
+    try:
+        match = re.search(
+            r"action_type\s*:\s*(\w+)\s*;\s*content\s*:\s*(.+)",
+            text.strip(),
+        )
+        if match:
+            return match.group(1).strip(), match.group(2).strip()
+    except:
+        pass
+
+    
+    return "classification", "important"
+
+
+# ===== MAIN =====
+async def main():
+    client = OpenAI(base_url=API_BASE_URL, api_key=API_KEY)
 
     env = EmailTriageEnvironment()
-    policy = RuleBasedEmailPolicy()
 
-    episodes = 10
-    scores = []
+    rewards: List[float] = []
+    steps_taken = 0
 
-    for _ in range(episodes):
-        score = run_episode(env, policy)
-        scores.append(score)
+    log_start(TASK_NAME, BENCHMARK, MODEL_NAME)
 
-    avg_score = sum(scores) / len(scores)
+    try:
+        obs = env.reset()
 
-    print("\n[SUMMARY]")
-    print(f"episodes: {episodes}")
-    print(f"average_score: {avg_score}")
+        for step in range(1, MAX_STEPS + 1):
+            if obs.done:
+                break
+
+            # ===== CALL LLM =====
+            user_prompt = build_prompt(obs)
+
+            try:
+                completion = client.chat.completions.create(
+                    model=MODEL_NAME,
+                    messages=[
+                        {"role": "system", "content": SYSTEM_PROMPT},
+                        {"role": "user", "content": user_prompt},
+                    ],
+                    temperature=TEMPERATURE,
+                    max_tokens=MAX_TOKENS,
+                )
+
+                response_text = completion.choices[0].message.content.strip()
+
+                
+
+            except Exception as e:
+                response_text = "action_type:classification;content:important"
+
+            action_type, content = parse_action(response_text)
+
+            # ===== ENFORCE STAGE =====
+            if action_type != obs.current_stage:
+                action_type = obs.current_stage
+
+            action = EmailTriageAction(
+                action_type=action_type,
+                content=content
+            )
+
+            # ===== STEP =====
+            try:
+                obs = env.step(action)
+                reward = obs.reward or 0.0
+                done = obs.done
+                error = None
+            except Exception as e:
+                reward = 0.0
+                done = True
+                error = str(e)
+
+            rewards.append(reward)
+            steps_taken = step
+
+            action_str = f"{action_type}:{content}"
+            log_step(step, action_str, reward, done, error)
+
+            if done:
+                break
+
+        total_reward = sum(rewards)
+        success = total_reward >= SUCCESS_THRESHOLD
+
+    finally:
+        try:
+            env.close()
+        except:
+            pass
+
+        score = min(max(sum(rewards), 0.0), 1.0)
+        log_end(success, steps_taken, score, rewards)
 
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())
