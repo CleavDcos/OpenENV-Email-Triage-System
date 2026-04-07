@@ -7,19 +7,29 @@ port: 7860
 
 tasks:
   - id: task1_classification
+    difficulty: easy
     name: "Email Classification"
-    description: "Classify the given email as spam, important, or support"
     seed: 42
-    grader: graders/grader1_classification.py
+    max_steps: 10
+    grader:
+      type: llm
+      prompt_template: "Score the agents performance 0.0 to 1.0 for classifying the given email as spam, important, or support"
 
   - id: task2_intent
+    difficulty: medium
     name: "Email Intent Detection"
-    description: "Identify the intent of the email: pricing inquiry, complaint, booking, or promotion"
     seed: 42
-    grader: graders/grader2_intent.py
+    max_steps: 10
+    grader:
+      type: llm
+      prompt_template: "Score the agent from 0.0 to 1.0 based on its abiliity to identify the intent of the email: pricing inquiry, complaint, booking, or promotion"
 
-  - id: task3_full_triage
-    name: "Full Email Triage Pipeline"
-    description: "Complete all three stages: classify, detect intent, and draft a reply"
+  - id: task3_reply
+    difficulty: hard
+    name: "Drafting Email Reply"
     seed: 42
-    grader: graders/grader3_full_triage.py
+    max_steps: 10
+    grader:
+      type: llm
+      prompt_template: "Score the agent from 0.0 to 1.0 on its abiliity to draft a reply to the email"
+
