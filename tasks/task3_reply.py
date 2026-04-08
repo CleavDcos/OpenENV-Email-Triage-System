@@ -1,22 +1,121 @@
-"""
-Task 3: Full Email Triage Pipeline
-The agent must complete all three stages: classify → detect intent → draft reply.
-All three stages are scored and averaged for a final score.
-"""
-
-TASK_ID = "task3_full_triage"
-TASK_NAME = "Full Email Triage Pipeline"
-TASK_DESCRIPTION = (
-    "Complete the full triage pipeline: classify the email, detect its intent, "
-    "and draft an appropriate reply. All stages are scored."
-)
-
-SEED = 42
-
-TASK_CONFIG = {
-    "task_id": TASK_ID,
-    "seed": SEED,
-    "stage": "full_pipeline",
-    "expected_stage_sequence": ["classification", "intent", "reply"],
-    "description": TASK_DESCRIPTION,
+HARD_TASK = {
+    "task_id": "task_hard",
+    "difficulty": "hard",
+    "description": (
+        "Perform email classification, intent detection (possibly multiple intents), "
+        "and generate an appropriate reply. Emails contain multiple requests, ambiguity, "
+        "and require structured responses."
+    ),
+    "data_corpus": [
+        {
+            "id": "hard_001",
+            "email_text": "Subject: Help with Direct Deposit Setup\n\nHi,\nI want to set up direct deposit for my paycheck, but I’m not sure what details are required. Also, I recently opened a savings account and would prefer the money to go there instead of my old account.\n\nCan you guide me through the process?\n\nThanks.",
+            "expected_classification": "support",
+            "expected_intent": [
+                "direct_deposit_setup",
+                "account_change_request"
+            ],
+            "expected_reply": "Explain steps for setting up direct deposit and how to change the destination account.",
+            "review_status": "pending",
+        },
+        {
+            "id": "hard_002",
+            "email_text": "Subject: Direct Deposit and Bank Change\n\nHello,\nI would like to set up direct deposit for my paycheck, but I recently switched to a new bank account. Do I need to inform my employer separately, and what details are required?\n\nRegards.",
+            "expected_classification": "inquiry",
+            "expected_intent": [
+                "direct_deposit_setup",
+                "process_clarification"
+            ],
+            "expected_reply": "Explain required details and inform user to coordinate with employer.",
+            "review_status": "pending",
+        },
+        {
+            "id": "hard_003",
+            "email_text": "Subject: Assistance with Paycheck Deposit\n\nHi,\nI want my paycheck to be directly deposited into my account, but I’m unsure how to begin. Also, what documents or identification are required for this process?\n\nThanks.",
+            "expected_classification": "inquiry",
+            "expected_intent": [
+                "direct_deposit_setup",
+                "requirement_inquiry"
+            ],
+            "expected_reply": "Provide steps and list required documents.",
+            "review_status": "pending",
+        },
+        {
+            "id": "hard_004",
+            "email_text": "Subject: Trouble Setting Up Direct Deposit\n\nHello,\nI tried setting up direct deposit for my paycheck, but I’m not sure if I did it correctly. Also, I want to confirm if the deposits will go to my checking or savings account.\n\nPlease assist.\n\nThanks.",
+            "expected_classification": "support",
+            "expected_intent": [
+                "direct_deposit_issue",
+                "account_confirmation"
+            ],
+            "expected_reply": "Help verify setup and explain how to confirm deposit account.",
+            "review_status": "pending",
+        },
+        {
+            "id": "hard_005",
+            "email_text": "Subject: Direct Deposit Setup Help\n\nHi,\nI’d like to set up direct deposit for my paycheck, but I don’t know the procedure. Also, I heard that I might need to contact my employer—can you confirm?\n\nRegards.",
+            "expected_classification": "inquiry",
+            "expected_intent": [
+                "direct_deposit_setup",
+                "process_clarification"
+            ],
+            "expected_reply": "Explain steps and confirm employer involvement.",
+            "review_status": "pending",
+        },
+        {
+            "id": "hard_006",
+            "email_text": "Subject: Switching to Direct Deposit\n\nHello,\nI want to switch my paycheck to direct deposit instead of receiving checks. Also, I have both a checking and savings account—how do I choose which one to use?\n\nThanks.",
+            "expected_classification": "inquiry",
+            "expected_intent": [
+                "direct_deposit_setup",
+                "account_selection"
+            ],
+            "expected_reply": "Explain setup process and how to select an account.",
+            "review_status": "pending",
+        },
+        {
+            "id": "hard_007",
+            "email_text": "Subject: Direct Deposit Setup for New Account\n\nHi,\nI recently opened a new bank account and would like my paycheck to be deposited there. However, I’m not sure how to set this up or what steps are involved.\n\nPlease help.\n\nThanks.",
+            "expected_classification": "support",
+            "expected_intent": [
+                "direct_deposit_setup",
+                "new_account_setup"
+            ],
+            "expected_reply": "Guide user through updating account details and setting up deposit.",
+            "review_status": "pending",
+        },
+        {
+            "id": "hard_008",
+            "email_text": "Subject: Direct Deposit Information Needed\n\nHello,\nI want to set up direct deposit, but I don’t know what information is required. Also, can you tell me how long it takes for the setup to complete?\n\nRegards.",
+            "expected_classification": "inquiry",
+            "expected_intent": [
+                "direct_deposit_setup",
+                "timeline_inquiry"
+            ],
+            "expected_reply": "Provide required details and expected processing time.",
+            "review_status": "pending",
+        },
+        {
+            "id": "hard_009",
+            "email_text": "Subject: Help with Direct Deposit Process\n\nHi,\nI’d like to have my paycheck directly deposited, but I’m not sure how to start. Also, I want to ensure that it goes into my savings account instead of checking.\n\nThanks.",
+            "expected_classification": "support",
+            "expected_intent": [
+                "direct_deposit_setup",
+                "account_preference"
+            ],
+            "expected_reply": "Explain setup steps and how to specify account preference.",
+            "review_status": "pending",
+        },
+        {
+            "id": "hard_010",
+            "email_text": "Subject: Direct Deposit Setup Guidance\n\nHello,\nCan you walk me through setting up direct deposit for my paycheck? Also, if I already submitted details, how can I check if it’s active?\n\nRegards.",
+            "expected_classification": "inquiry",
+            "expected_intent": [
+                "direct_deposit_setup",
+                "status_check"
+            ],
+            "expected_reply": "Provide setup steps and explain how to verify activation status.",
+            "review_status": "pending",
+        }
+    ],
 }
