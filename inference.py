@@ -51,9 +51,8 @@ def log_step(step, action, reward, done, error):
     )
 
 
-def log_end(success, steps, score, rewards):
-    rewards_str = ",".join(f"{r:.2f}" for r in rewards)
-    print(f"[END] success={str(success).lower()} steps={steps} score={score:.3f} rewards={rewards_str}", flush=True)
+def log_end(task, steps, score):
+    print(f"[END] task={task} score={score:.2f} steps={steps}", flush=True)
 
 
 # ===== PROMPT BUILDER =====
@@ -175,8 +174,8 @@ async def main():
         except:
             pass
 
-        score = min(max(sum(rewards), 0.0), 1.0)
-        log_end(success, steps_taken, score, rewards)
+        score = sum(rewards) / len(rewards) if rewards else 0.0
+        log_end("task3_reply", steps_taken, score)
 
 
 if __name__ == "__main__":
